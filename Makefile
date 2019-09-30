@@ -1,14 +1,28 @@
 
-CPP         = /lib/cpp
+TOOLCHAIN		= gcc
+
+ifeq ($(TOOLCHAIN), gcc)
+CPP         = /lib/cpp -P
 CC          = gcc
 ARCH_FLAGS  =
 OMP_FLAGS   = -fopenmp
-DEBUG_FLAGS = -Wall -g --save-temps
+DEBUG_FLAGS = -std=c11 -g -Wall -Wextra -Wpedantic --save-temps
 OPT_FLAGS   = $(OMP_FLAGS) -O0 -fno-tree-vectorize
+endif
+
+ifeq ($(TOOLCHAIN), llvm)
+CPP         = clang -E
+CC          = clang
+ARCH_FLAGS  =
+OMP_FLAGS   = -fopenmp
+DEBUG_FLAGS = -std=c11 -g -Wall -Wextra -Wpedantic --save-temps
+OPT_FLAGS   = $(OMP_FLAGS) -O0 -fno-vectorize
+endif
+
 INCDIR			=
 LIBDIR			=
 LIBS        =
-CPPFLAGS    = -P $(ARCH_FLAGS) $(INCDIR)
+CPPFLAGS    = $(ARCH_FLAGS) $(INCDIR)
 CFLAGS      = $(DEBUG_FLAGS) $(OPT_FLAGS)
 LDFLAGS     = $(LIBDIR) $(LIBS) $(OMP_FLAGS)
 RM          = rm -rf
@@ -44,3 +58,4 @@ clean:
 
 distclean: clean
 	$(RM) $(EXE)
+	$(RM) membench.csv
