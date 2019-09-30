@@ -8,6 +8,8 @@
 #define CACHE_MAX (16*1024*1024)
 #define RTIME 0.1
 
+#undef CS5220
+
 int x[CACHE_MAX];
 
 int main( int argc, char *argv[] )
@@ -39,6 +41,7 @@ int main( int argc, char *argv[] )
   /* write output file header */
   fprintf(fp, "size, stride, ns\n");
 
+#ifdef CS5220
   /* run experiments */
   for (long csize = CACHE_MIN; csize <= CACHE_MAX; csize *= 2)
   {
@@ -91,6 +94,7 @@ int main( int argc, char *argv[] )
 
     }
   }
+#endif
 
   return EXIT_SUCCESS;
 
