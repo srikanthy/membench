@@ -35,7 +35,7 @@ int main( int argc, char *argv[] )
   int l1steps, l2steps;
   int i;
   int y;
-  
+
   /* timer variables */
   long long int stime;
   long long int l1time;
@@ -61,15 +61,10 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
   }
 
-  /* print cache information */
-//fprintf(stdout, "L1 Cache : %d kB\n", L1_CACHE);
-//fprintf(stdout, "L2 Cache : %d kB\n", L2_CACHE);
-//fprintf(stdout, "L3 Cache : %d kB\n", L3_CACHE);
-
   /* open output file and write header */
   fp = fopen(fname, "w");
   fprintf(stdout, "saving output to %s\n", fname);
-  
+
   /* membench */
   for (length = CACHE_MIN; length <= CACHE_MAX; length *= 2)
   {
@@ -134,7 +129,6 @@ int main( int argc, char *argv[] )
   /* end of main */
 
 }
-
 
 /* microsecond precision clock */
 
