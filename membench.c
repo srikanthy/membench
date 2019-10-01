@@ -5,15 +5,20 @@
 #include <string.h>
 
 /* define macros*/
-#define MIN_ARRAY_SIZE 4  // size in MB
-#define MAX_ARRAY_SIZE (128*1024)  // size in MB
-#define NITERATIONS 10
-#define SAMPLE_INTERVAL 0.5
+#define MIN_ARRAY_SIZE 4          // size in kB
+#define MAX_ARRAY_SIZE (64*1024)  // size in kB
+#define NITERATIONS 10            // number of iteratons
+#define SAMPLE_INTERVAL 0.5       // max time for a stride
 
 /* function prototypes */
-long long  int microclock();
 #ifdef __linux__
+#define MEMBENCH_CLOCK nanoclock
+#define MULTIPLIER 1
 long long int nanoclock();
+#else
+#define MEMBENCH_CLOCK microclock
+#define MULTIPLIER 1000
+long long  int microclock();
 #endif
 
 int main( int argc, char *argv[] )
@@ -43,7 +48,7 @@ int main( int argc, char *argv[] )
   fprintf(stdout, "membench: writing output to %s\n", fname);
 
   /* write header */
-  fprintf(fp, "size, stride, time\n");
+  fprintf(fp, "size, stride, ns\n");
 
   /* membench algorithm -- start */
 
@@ -70,58 +75,57 @@ int main( int argc, char *argv[] )
   /* start loops */
   for (array_size = min_array_size;  array_size <= max_array_size; array_size *= 2)
   {
-    for (stride = 1; stride <= max_array_size/2; stride *= 2)
+    for (stride = 1; stride <= array_size/2; stride *= 2)
     {
 
       ilimit = array_size - stride + 1;
 
       /* loop 1 - strided access + overhead */
       l1steps = 0;
+      l1start = MEMBENCH_CLOCK();
 
       do
       {
-        l1start = microclock();
-
         for (i = 1; i <= niterations * stride; i++)
         {
-          for (idx = 0; idx < ilimit; idx++)
+          for (idx = 0; idx < ilimit; idx += stride)
           {
             x[idx]++;
           }
         }
 
-        l1time = microclock() - l1start;
         l1steps++;
+        l1time = MEMBENCH_CLOCK() - l1start;
 
       } while (l1time < SAMPLE_INTERVAL);
 
       /* loop 2 - overhead */
       l2steps = 0;
+      l2start = MEMBENCH_CLOCK();
 
       do
       {
-        l2start = microclock();
 
         for (i = 1; i <= niterations * stride; i++)
         {
-          for (idx = 0; idx < ilimit; idx++)
+          for (idx = 0; idx < ilimit; idx += stride)
           {
             tvar += idx;
           }
         }
 
-        l2time = microclock() - l2start;
         l2steps++;
+        l2time = MEMBENCH_CLOCK() - l2start;
 
       } while (l2steps < l1steps);
 
 #ifdef DEVEL
-      printf("l1time = %lld, l2time = %lld\n", l1time, l2time);
+      printf("l1time = %lld, l2time = %lld, diff = %lld\n", l1time, l2time, l1time-l2time);
 #endif
 
       /* write timings */
       double runtime = (double)(l1time - l2time);
-      double steptime = 1000.0 * runtime/l1steps;
+      double steptime = MULTIPLIER * runtime/l1steps;
       double stepreads = niterations * stride * ((ilimit - 1.0)/stride + 1.0);
       double access_time = steptime/stepreads;
 
@@ -140,21 +144,6 @@ int main( int argc, char *argv[] )
 
 }
 
-/* microsecond precision clock */
-
-#include <sys/time.h>
-
-long long int microclock()
-{
-
-  struct timeval tv;
-
-  gettimeofday(&tv, NULL);
-
-  return (1000000 * tv.tv_sec + tv.tv_usec);
-
-}
-
 #ifdef __linux__
 /* nanosecond precision clock */
 
@@ -170,4 +159,22 @@ long long int nanoclock()
   return (1000000000 * tv.tv_sec + tv.tv_nsec);
 
 }
+
+#else
+
+/* microsecond precision clock */
+
+#include <sys/time.h>
+
+long long int microclock()
+{
+
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+
+  return (1000000 * tv.tv_sec + tv.tv_usec);
+
+}
+
 #endif
