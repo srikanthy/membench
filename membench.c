@@ -74,9 +74,13 @@ int main( int argc, char *argv[] )
   int l2steps;
   int tvar = 0;
 
-  /* timer variables */
+  /* timer and stats variables */
   long long int l1start, l1time;
   long long int l2start, l2time;
+  double runtime;
+  double steptime;
+  double stepreads;
+  double access_time;
 
   /* read commandline arguments */
   if (argc == 1)
@@ -98,7 +102,7 @@ int main( int argc, char *argv[] )
   fprintf(stdout, "membench: writing output to %s\n", fname);
 
   /* write header */
-  fprintf(fp, "size, stride, ns\n");
+  fprintf(fp, "size,stride,time\n");
 
   /* membench algorithm -- start */
   /* start loops */
@@ -149,12 +153,12 @@ int main( int argc, char *argv[] )
       } while (l2steps < l1steps);
 
       /* write timings */
-      double runtime = (double)(l1time - l2time);
-      double steptime = MULTIPLIER * runtime/l1steps;
-      double stepreads = niterations * stride * ((ilimit - 1.0)/stride + 1.0);
-      double access_time = steptime/stepreads;
+      runtime = (double)(l1time - l2time);
+      steptime = MULTIPLIER * runtime/l1steps;
+      stepreads = niterations * stride * ((ilimit - 1.0)/stride + 1.0);
+      access_time = steptime/stepreads;
 
-      fprintf(fp, "%lu, %lu, %f\n", array_size * sizeof(int), stride * sizeof(int), access_time);
+      fprintf(fp, "%lu,%lu,%f\n", array_size * sizeof(int), stride * sizeof(int), access_time);
       fflush(fp);
 
     }
