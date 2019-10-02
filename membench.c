@@ -1,14 +1,44 @@
 
+/* -- membench : Memory Microbenchmark --
+ *
+ * A simple memory benchmark to understand the affect 
+ * of cache memory on strided access
+ *
+ * membench:
+ * for array A of length L from 4KB to 64MB by 2x
+ *   for stride s from 4 bytes (1 word) to L/2 by 2x
+ *     time following loop
+ *     for i from 1 to niterations
+ *       for index 0 to L by s
+ *         load A[i] from memory
+ *
+ * references: 1. {Lecture 2, COMP 422, Parallel Computing, Spring 2008,
+ *                 https://www.cs.rice.edu/~vs3/comp422/}
+ *             2. {Lecture 2, CS 5220, Applications of Parallel Computers,
+ *                 https://www.cs.cornell.edu/~bindel/class/cs5220-s10/index.html}
+ *
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 /* define macros*/
+#ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
+#endif
+
+#ifndef MAX_ARRAY_SIZE
 #define MAX_ARRAY_SIZE (64*1024)  // size in kB
+#endif
+
+#ifndef NITERATIONS
 #define NITERATIONS 10            // number of iteratons
+#endif
+
+#ifndef SAMPLE_INTERVAL
 #define SAMPLE_INTERVAL 0.5       // max time for a stride
+#endif
 
 /* function prototypes */
 #ifdef __linux__
@@ -27,6 +57,26 @@ int main( int argc, char *argv[] )
   /* io variables */
   char fname[32];
   FILE *fp;
+
+  /* array and cache sizes */
+  int min_array_size = MIN_ARRAY_SIZE * 1024 / sizeof(int);  // KB -> NINTS
+  int max_array_size = MAX_ARRAY_SIZE * 1024 / sizeof(int);  // KB -> NINTS
+
+  /* local variables */
+  int x[max_array_size];
+  int array_size;
+  int stride;
+  int idx;
+  int ilimit;
+  int niterations = NITERATIONS;
+  int i;
+  int l1steps;
+  int l2steps;
+  int tvar = 0;
+
+  /* timer variables */
+  long long int l1start, l1time;
+  long long int l2start, l2time;
 
   /* read commandline arguments */
   if (argc == 1)
@@ -51,27 +101,6 @@ int main( int argc, char *argv[] )
   fprintf(fp, "size, stride, ns\n");
 
   /* membench algorithm -- start */
-
-  /* array and cache sizes */
-  int min_array_size = MIN_ARRAY_SIZE * 1024 / sizeof(int);  // KB -> NINTS
-  int max_array_size = MAX_ARRAY_SIZE * 1024 / sizeof(int);  // KB -> NINTS
-
-  /* local variables */
-  int x[max_array_size];
-  int array_size;
-  int stride;
-  int idx;
-  int ilimit;
-  int niterations = NITERATIONS;
-  int i;
-  int l1steps;
-  int l2steps;
-  int tvar = 0;
-
-  /* timer variables */
-  long long int l1start, l1time;
-  long long int l2start, l2time;
-
   /* start loops */
   for (array_size = min_array_size;  array_size <= max_array_size; array_size *= 2)
   {
@@ -119,10 +148,6 @@ int main( int argc, char *argv[] )
 
       } while (l2steps < l1steps);
 
-#ifdef DEVEL
-      printf("l1time = %lld, l2time = %lld, diff = %lld\n", l1time, l2time, l1time-l2time);
-#endif
-
       /* write timings */
       double runtime = (double)(l1time - l2time);
       double steptime = MULTIPLIER * runtime/l1steps;
@@ -134,7 +159,6 @@ int main( int argc, char *argv[] )
 
     }
   }
-
   /* membench algorithm -- end */
 
   /* close file */
