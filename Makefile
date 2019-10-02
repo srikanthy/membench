@@ -59,3 +59,4 @@ clean:
 distclean: clean
 	$(RM) $(EXE)
 	$(RM) membench.csv
+	$(RM) membench.pdf
