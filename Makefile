@@ -1,4 +1,12 @@
 
+#
+# Makefile - membench
+#
+# author: srikanth yalavarthi
+# last modified: 2019-10-02
+# url: https://github.com/srikanthy/membench.git
+#
+
 TOOLCHAIN		= gcc
 
 ifeq ($(TOOLCHAIN), gcc)

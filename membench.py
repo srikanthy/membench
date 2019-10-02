@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+"""
+Generate line plots for the result of membench microbenchmark.
+
+Author: Srikanth Yalavarthi
+Last Modified : 2019-10-02
+URL: https://github.com/srikanthy/membench.git
+
+"""
+
 # module imports
 import sys
 import os
@@ -8,6 +17,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def bytes_to_string(int_bytes):
+
     """ Generate string based on size in bytes. """
 
     if (int_bytes < int(pow(2,10))):
@@ -20,6 +30,7 @@ def bytes_to_string(int_bytes):
       return "{0} GB".format(int(int_bytes/pow(2,30)))
 
 def main(infile):
+
     """ 
     Program program to plot output of membench.
 

@@ -17,6 +17,10 @@
  *             2. {Lecture 2, CS 5220, Applications of Parallel Computers,
  *                 https://www.cs.cornell.edu/~bindel/class/cs5220-s10/index.html}
  *
+ * author: srikanth yalavarthi
+ * last modified : 2019-10-02
+ * url: https://github.com/srikanthy/membench.git
+ *
  */
 
 #include <stdio.h>
