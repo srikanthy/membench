@@ -29,7 +29,7 @@ def bytes_to_string(int_bytes):
     if (int_bytes >= int(pow(2,30)) and int_bytes < int(pow(2,40))):
       return "{0} GB".format(int(int_bytes/pow(2,30)))
 
-def main(infile):
+def main(infile = 'membench.csv'):
 
     """ 
     Program program to plot output of membench.
@@ -98,6 +98,29 @@ def main(infile):
 
     # add legend
     legend = plt.legend(loc = 'upper right', fontsize = 4, framealpha = 1.0, frameon = False)
+
+    # define cache values in kb
+    l1_cache = 32
+    l2_cache = 256
+    l3_cache = 6 * 1024
+
+    # add vertical marker lines for cache sizes
+    for key, block in data.groupby("time"):
+      max_time = max(block['time'])
+
+    l1_color = "green"
+    l2_color = "blue"
+    l3_color = "orange"
+    offset = 5
+
+    plt.axvline(l1_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l1_color)
+    plt.axvline(l2_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l2_color)
+    plt.axvline(l3_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l3_color)
+
+    ypos = math.floor(max_time) - offset
+    plt.text(l1_cache * 1024, ypos, 'L1 Cache = ' + str(bytes_to_string(l1_cache * 1024)), rotation = 90, fontsize = 5, color = l1_color)
+    plt.text(l2_cache * 1024, ypos, 'L2 Cache = ' + str(bytes_to_string(l2_cache * 1024)), rotation = 90, fontsize = 5, color = l2_color)
+    plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
 
     # show the plot on screen
 #   plt.show()
