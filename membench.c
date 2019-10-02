@@ -24,6 +24,8 @@
 #include <string.h>
 
 /* define macros*/
+#define HIRES_CLOCK
+
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
 #endif
@@ -40,16 +42,17 @@
 #define SAMPLE_INTERVAL 0.5       // max time for a stride
 #endif
 
-/* function prototypes */
-#ifdef __linux__
+#ifdef HIRES_CLOCK
 #define MEMBENCH_CLOCK nanoclock
 #define MULTIPLIER 1
-long long int nanoclock();
 #else
 #define MEMBENCH_CLOCK microclock
 #define MULTIPLIER 1000
-long long  int microclock();
 #endif
+
+/* function prototypes */
+long long int nanoclock(void);
+long long  int microclock(void);
 
 int main( int argc, char *argv[] )
 {
@@ -172,12 +175,11 @@ int main( int argc, char *argv[] )
 
 }
 
-#ifdef __linux__
 /* nanosecond precision clock */
 
 #include <time.h>
 
-long long int nanoclock()
+long long int nanoclock(void)
 {
 
   struct timespec tv;
@@ -188,13 +190,11 @@ long long int nanoclock()
 
 }
 
-#else
-
 /* microsecond precision clock */
 
 #include <sys/time.h>
 
-long long int microclock()
+long long int microclock(void)
 {
 
   struct timeval tv;
@@ -204,5 +204,3 @@ long long int microclock()
   return (1000000 * tv.tv_sec + tv.tv_usec);
 
 }
-
-#endif
