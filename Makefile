@@ -14,7 +14,7 @@ CPP         = /lib/cpp -P
 CC          = gcc
 ARCH_FLAGS  =
 OMP_FLAGS   = -fopenmp
-DEBUG_FLAGS = -std=c11 -g -Wall -Wextra -Wpedantic --save-temps
+DEBUG_FLAGS = -std=c11 -g -Wall -Wextra --save-temps # -Wpedantic
 OPT_FLAGS   = $(OMP_FLAGS) -O0 -fno-tree-vectorize
 endif
 
@@ -39,7 +39,7 @@ LN          = ln -sf
 # source files
 LIB_HDR =
 LIB_SRC =
-EXE_SRC = membench.c perf_events.c
+EXE_SRC = membench.c perf_events_single.c
 
 # derived files
 EXE = $(EXE_SRC:.c=.x)
@@ -53,7 +53,7 @@ all: $(EXE)
 membench.x: membench.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-perf_events.x: perf_events.o $(LIB_SRC:.c=.o)
+perf_events_single.x: perf_events_single.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # build rules
