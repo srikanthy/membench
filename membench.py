@@ -13,6 +13,7 @@ URL: https://github.com/srikanthy/membench.git
 import sys
 import os
 import math
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -48,6 +49,9 @@ def main(infile = 'membench.csv'):
 
     # load data
     data = pd.read_csv(infile)
+
+    # cleanup data, remove negative values
+    data[data < 0] = np.nan
 
     # create line plot
     fig = plt.figure()
