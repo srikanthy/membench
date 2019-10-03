@@ -111,13 +111,14 @@ def main(infile = 'membench.csv'):
     l1_color = "green"
     l2_color = "blue"
     l3_color = "orange"
-    offset = 5
+    offset = 4
 
     plt.axvline(l1_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l1_color)
     plt.axvline(l2_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l2_color)
     plt.axvline(l3_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l3_color)
 
-    ypos = math.floor(max_time) - offset
+    ylims = ax.axes.get_ylim()
+    ypos = ylims[1] - offset
     plt.text(l1_cache * 1024, ypos, 'L1 Cache = ' + str(bytes_to_string(l1_cache * 1024)), rotation = 90, fontsize = 5, color = l1_color)
     plt.text(l2_cache * 1024, ypos, 'L2 Cache = ' + str(bytes_to_string(l2_cache * 1024)), rotation = 90, fontsize = 5, color = l2_color)
     plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
