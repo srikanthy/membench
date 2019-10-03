@@ -56,9 +56,12 @@ def main(infile = 'membench.csv'):
     # create line plot
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    linestyles = [ "solid", "dashed", "dashdot" ]
 
+    i = 0
     for key, block in data.groupby("size"):
-      plt.semilogx(block['stride'], block['time'], label = bytes_to_string(key), basex = 2, nonposx = 'mask', linewidth = 0.6, linestyle = '-', marker = '.', markersize = 1.8)
+      plt.semilogx(block['stride'], block['time'], label = bytes_to_string(key), basex = 2, nonposx = 'mask', linewidth = 0.6, linestyle = linestyles[i%3], marker = '.', markersize = 1.8)
+      i += 1
 
     # define xticks
     for key, block in data.groupby("size"):
