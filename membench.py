@@ -105,9 +105,6 @@ def main(infile = 'membench.csv'):
     l3_cache = 6 * 1024
 
     # add vertical marker lines for cache sizes
-    for key, block in data.groupby("time"):
-      max_time = max(block['time'])
-
     l1_color = "green"
     l2_color = "blue"
     l3_color = "orange"
@@ -122,6 +119,16 @@ def main(infile = 'membench.csv'):
     plt.text(l1_cache * 1024, ypos, 'L1 Cache = ' + str(bytes_to_string(l1_cache * 1024)), rotation = 90, fontsize = 5, color = l1_color)
     plt.text(l2_cache * 1024, ypos, 'L2 Cache = ' + str(bytes_to_string(l2_cache * 1024)), rotation = 90, fontsize = 5, color = l2_color)
     plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
+
+    # add horizontal marker lines for min access time
+    min_time = 99999999.0
+    for key, block in data.groupby("time"):
+      min_time = min(min_time, min(block['time']))
+
+    xlims = ax.axes.get_xlim()
+    xpos = xlims[1]
+    plt.axhline(min_time, linestyle = "dashed", linewidth = 0.8, color = 'brown')
+    plt.text(xpos * 1.2, min_time - 0.1, 'ns = ' + str(round(min_time,3)), rotation = 0, fontsize = 5, color = 'brown')
 
     # show the plot on screen
 #   plt.show()
