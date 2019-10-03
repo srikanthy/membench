@@ -39,7 +39,7 @@ LN          = ln -sf
 # source files
 LIB_HDR =
 LIB_SRC =
-EXE_SRC = membench.c perf_events_single.c
+EXE_SRC = membench.c perf_events.c
 
 # derived files
 EXE = $(EXE_SRC:.c=.x)
@@ -54,6 +54,9 @@ membench.x: membench.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 perf_events_single.x: perf_events_single.o $(LIB_SRC:.c=.o)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+perf_events.x: perf_events.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
 # build rules
