@@ -13,8 +13,8 @@
 #ifdef PERF_GROUP_EVENTS
 struct read_format {
   __u64 nr;
-  __u64 time_enabled;
-  __u64 time_running;
+//__u64 time_enabled;
+//__u64 time_running;
   struct {
     __u64 value;
     __u64 id;
@@ -23,8 +23,8 @@ struct read_format {
 #else
 struct read_format {
   __u64 value;
-  __u64 time_enabled;
-  __u64 time_running;
+//__u64 time_enabled;
+//__u64 time_running;
   __u64 id;
 };
 #endif
@@ -68,7 +68,7 @@ int main( void )
   memset(&pe, 0, sizeof(struct perf_event_attr));
   pe.type = PERF_TYPE_HARDWARE;
   pe.size = sizeof(struct perf_event_attr);
-  pe.config = PERF_COUNT_HW_INSTRUCTIONS;
+  pe.config = PERF_COUNT_HW_CPU_CYCLES;
   pe.disabled = 1;
   pe.exclude_kernel = 1;
   pe.exclude_hv = 1;
