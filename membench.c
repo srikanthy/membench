@@ -29,6 +29,7 @@
 
 /* define macros*/
 #define HIRES_CLOCK
+#define ENABLE_PERF_EVENTS
 
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
@@ -52,6 +53,40 @@
 #else
 #define MEMBENCH_CLOCK microclock
 #define MULTIPLIER 1000
+#endif
+
+#ifdef ENABLE_PERF_EVENTS
+
+/* additional headers */
+#include <stdint.h>
+#include <linux/perf_event.h>
+#include <unistd.h>
+#include <asm/unistd.h>
+#include <sys/ioctl.h>
+
+/* read format data structure */
+struct read_format {
+  uint64_t nr;
+//uint64_t time_enabled;
+//uint64_t time_running;
+  struct {
+    uint64_t value;
+    uint64_t id;
+  } values[];
+};
+
+/* wrapperfunction for perf_event_open*/
+int perf_event_open( struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned long flags)
+{
+
+  int fd; // file descriptor
+
+  fd = syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
+
+  return fd;
+
+}
+
 #endif
 
 /* function prototypes */
@@ -89,6 +124,19 @@ int main( int argc, char *argv[] )
   double stepreads;
   double access_time;
 
+#ifdef ENABLE_PERF_EVENTS
+  
+  /* perfvariables */
+  struct perf_event_attr pe;
+  struct read_format *rf;
+  uint64_t fd1, fd2;
+  uint64_t id1, id2;
+  uint64_t val1, val2;
+  char buffer[1024];
+
+  rf = (struct read_format*) buffer;
+#endif
+
   /* read commandline arguments */
   if (argc == 1)
   {
@@ -108,8 +156,40 @@ int main( int argc, char *argv[] )
   fp = fopen(fname, "w");
   fprintf(stdout, "membench: writing output to %s\n", fname);
 
+#ifdef ENABLE_PERF_EVENTS
+
+  /* define event attributes and create fd1 - CPU Cycles */
+  memset(&pe, 0, sizeof(struct perf_event_attr));
+  pe.type = PERF_TYPE_HARDWARE;
+  pe.size = sizeof(struct perf_event_attr);
+  pe.config = PERF_COUNT_HW_CPU_CYCLES;
+  pe.disabled = 1;
+  pe.exclude_kernel = 1;
+  pe.exclude_hv = 1;
+  pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+  fd1 = perf_event_open(&pe, 0, -1, -1, 0);
+  ioctl(fd1, PERF_EVENT_IOC_ID, &id1);
+
+  /* define event attributes and create fd2 - L1 Cache Misses */
+  memset(&pe, 0, sizeof(struct perf_event_attr));
+  pe.type = PERF_TYPE_HW_CACHE;
+  pe.size = sizeof(struct perf_event_attr);
+  pe.config = PERF_COUNT_HW_CACHE_L1D | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+  pe.disabled = 0;
+  pe.exclude_kernel = 1;
+  pe.exclude_hv = 1;
+  pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+  fd2 = perf_event_open(&pe, 0, -1, fd1, 0);
+  ioctl(fd2, PERF_EVENT_IOC_ID, &id2);
+
+  /* write header */
+  fprintf(fp, "size,stride,time,cycles,l1cache\n");
+
+#else
   /* write header */
   fprintf(fp, "size,stride,time\n");
+#endif
+
 
   /* membench algorithm -- start */
   /* start loops */
@@ -123,6 +203,12 @@ int main( int argc, char *argv[] )
       /* loop 1 - strided access + overhead */
       l1steps = 0;
       l1start = MEMBENCH_CLOCK();
+
+#ifdef ENABLE_PERF_EVENTS
+      /* start monitoring */
+      ioctl(fd1, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
+      ioctl(fd1, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
+#endif
 
       do
       {
@@ -138,6 +224,12 @@ int main( int argc, char *argv[] )
         l1time = MEMBENCH_CLOCK() - l1start;
 
       } while (l1time < SAMPLE_INTERVAL);
+
+#ifdef ENABLE_PERF_EVENTS
+      /* stop monitoring */
+      ioctl(fd1, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
+#endif
+
 
       /* loop 2 - overhead */
       l2steps = 0;
@@ -165,7 +257,25 @@ int main( int argc, char *argv[] )
       stepreads = niterations * stride * ((ilimit - 1.0)/stride + 1.0);
       access_time = steptime/stepreads;
 
+#ifdef ENABLE_PERF_EVENTS
+      read(fd1, buffer, sizeof(buffer));
+
+      for (i = 0; (uint64_t)i < rf->nr; i++)
+      {
+        if (rf->values[i].id == id1)
+        {
+          val1 = rf->values[i].value;
+        }
+        else if (rf->values[i].id == id2)
+        {
+          val2 = rf->values[i].value;
+        }
+      }
+
+      fprintf(fp, "%lu,%lu,%f,%ld,%ld\n", array_size * sizeof(int), stride * sizeof(int), access_time, val1, val2);
+#else
       fprintf(fp, "%lu,%lu,%f\n", array_size * sizeof(int), stride * sizeof(int), access_time);
+#endif
       fflush(fp);
 
     }
