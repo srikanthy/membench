@@ -35,7 +35,7 @@
 #endif
 
 #ifndef MAX_ARRAY_SIZE
-#define MAX_ARRAY_SIZE (64*1024)  // size in kB
+#define MAX_ARRAY_SIZE (64*1024)   // size in kB
 #endif
 
 #ifndef NITERATIONS

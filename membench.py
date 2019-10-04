@@ -69,9 +69,15 @@ def main(infile = 'membench.csv'):
       min_stride = min(block['stride'])
 
     nxticks = int(math.log(max_stride,2))
+
+    ratio = nxticks/12;
+    jump = math.floor(ratio)
+    if ((ratio-math.floor(ratio)) > 0.5):
+      jump += 1
+
     xticks_labels = []
     xticks_locs = []
-    for tid in range(0, nxticks, 3):
+    for tid in range(0, nxticks, jump):
       xticks_locs.append(int(pow(2,tid)))
       if (tid < 10):
         xticks_labels.append(str(int(pow(2,tid)/pow(2,0)))  +  " B")
@@ -104,7 +110,7 @@ def main(infile = 'membench.csv'):
 #   plt.grid(b = True, axis= 'y', which = 'minor', linestyle = '--')
 
     # add legend
-    legend = plt.legend(loc = 'upper right', fontsize = 4, framealpha = 1.0, frameon = False)
+    legend = plt.legend(loc = 'upper left', fontsize = 4, framealpha = 1.0, frameon = False)
 
     # define cache values in kb
     l1_cache = 32
@@ -115,21 +121,27 @@ def main(infile = 'membench.csv'):
     l1_color = "green"
     l2_color = "blue"
     l3_color = "orange"
-    offset_pxl = 75
+    offset_pxl = 100
+    offset_pts = 54
 
-    plt.axvline(l1_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l1_color)
-    plt.axvline(l2_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l2_color)
-    plt.axvline(l3_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l3_color)
+    if ( (l1_cache * 1024) < max_stride ):
+      plt.axvline(l1_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l1_color)
+    if ( (l2_cache * 1024) < max_stride ):
+      plt.axvline(l2_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l2_color)
+    if ( (l3_cache * 1024) < max_stride ):
+      plt.axvline(l3_cache * 1024, linestyle = "dashed", linewidth = 0.8, color = l3_color)
 
     # calculate ypos based on number of pixels
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-    y_pxl = bbox.height * fig.dpi
     y_hgt = ax.axes.get_ylim()[1]
-    ypos = (y_pxl - offset_pxl) * y_hgt / y_pxl
+    ypos = (1 - offset_pts/(72 * bbox.height)) * y_hgt
 
-    plt.text(l1_cache * 1024, ypos, 'L1 Cache = ' + str(bytes_to_string(l1_cache * 1024)), rotation = 90, fontsize = 5, color = l1_color)
-    plt.text(l2_cache * 1024, ypos, 'L2 Cache = ' + str(bytes_to_string(l2_cache * 1024)), rotation = 90, fontsize = 5, color = l2_color)
-    plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
+    if ( (l1_cache * 1024) < max_stride ):
+      plt.text(l1_cache * 1024, ypos, 'L1 Cache = ' + str(bytes_to_string(l1_cache * 1024)), rotation = 90, fontsize = 5, color = l1_color)
+    if ( (l2_cache * 1024) < max_stride ):
+      plt.text(l2_cache * 1024, ypos, 'L2 Cache = ' + str(bytes_to_string(l2_cache * 1024)), rotation = 90, fontsize = 5, color = l2_color)
+    if ( (l3_cache * 1024) < max_stride ):
+      plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
 
     # add horizontal marker lines for min access time
     min_time = 99999999.0
