@@ -13,8 +13,8 @@
 #ifdef PERF_GROUP_EVENTS
 struct read_format {
   __u64 nr;
-//__u64 time_enabled;
-//__u64 time_running;
+  __u64 time_enabled;
+  __u64 time_running;
   struct {
     __u64 value;
     __u64 id;
@@ -49,6 +49,8 @@ int main( void )
   __u64 fd1, fd2;
   __u64 id1, id2;
   __u64 val1, val2;
+  __u64 en_time;
+  __u64 rn_time;
 #ifdef PERF_GROUP_EVENTS
   struct read_format *rf;
   char buffer[4096];
@@ -73,7 +75,8 @@ int main( void )
   pe.exclude_kernel = 1;
   pe.exclude_hv = 1;
 #ifdef PERF_GROUP_EVENTS
-  pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+//pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+  pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_GROUP | PERF_FORMAT_ID;
 #else
   pe.read_format = PERF_FORMAT_ID;
 #endif
@@ -89,7 +92,8 @@ int main( void )
   pe.exclude_kernel = 1;
   pe.exclude_hv = 1;
 #ifdef PERF_GROUP_EVENTS
-  pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+//pe.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+  pe.read_format = PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING | PERF_FORMAT_GROUP | PERF_FORMAT_ID;
 #else
   pe.read_format = PERF_FORMAT_ID;
 #endif
@@ -113,6 +117,9 @@ int main( void )
 #ifdef PERF_GROUP_EVENTS
   read(fd1, buffer, sizeof(buffer));
 
+  en_time = rf->time_enabled;
+  rn_time = rf->time_running;
+
   for (i = 0; i < rf->nr; i++)
   {
     if (rf->values[i].id == id1)
@@ -132,8 +139,8 @@ int main( void )
   val2 = rf2.value;
 #endif
 
-  printf("cpu cycles = %lld\n", val1);
-  printf("cache misses = %lld\n", val2);
+  printf("cpu cycles = %lld in %lld\n", val1, en_time);
+  printf("cache misses = %lld in %lld\n", val2, rn_time);
 
 
   return EXIT_SUCCESS;
