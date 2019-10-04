@@ -29,7 +29,6 @@
 
 /* define macros*/
 #define HIRES_CLOCK
-#define ENABLE_PERF_EVENTS
 
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB

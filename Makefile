@@ -14,7 +14,7 @@ CPP         = /lib/cpp -P
 CC          = gcc
 ARCH_FLAGS  =
 OMP_FLAGS   = -fopenmp
-DEBUG_FLAGS = -std=c11 -g -Wall -Wextra --save-temps # -Wpedantic
+DEBUG_FLAGS = -std=c11 -pedantic -g -Wall -Wextra --save-temps
 OPT_FLAGS   = $(OMP_FLAGS) -O0 -fno-tree-vectorize
 endif
 
@@ -23,7 +23,7 @@ CPP         = clang -E
 CC          = clang
 ARCH_FLAGS  =
 OMP_FLAGS   = -fopenmp
-DEBUG_FLAGS = -std=c11 -g -Wall -Wextra -Wpedantic --save-temps
+DEBUG_FLAGS = -std=c11 -pedantic -g -Wall -Wextra --save-temps
 OPT_FLAGS   = $(OMP_FLAGS) -O0 -fno-vectorize
 endif
 
@@ -53,8 +53,7 @@ all: $(EXE)
 membench.x: membench.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
-perf_events_single.x: perf_events_single.o $(LIB_SRC:.c=.o)
-	$(CC) $(LDFLAGS) -o $@ $^
+perf_events.o: CFLAGS += -Wno-pedantic
 
 perf_events.x: perf_events.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
