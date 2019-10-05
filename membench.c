@@ -30,13 +30,14 @@
 /* define macros*/
 #define HIRES_CLOCK
 #define ENABLE_PERF_COUNTERS
+#define PERF_EVENTS_COUNT 3
 
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
 #endif
 
 #ifndef MAX_ARRAY_SIZE
-#define MAX_ARRAY_SIZE (64*1024)   // size in kB
+#define MAX_ARRAY_SIZE (6*1024)   // size in kB
 #endif
 
 #ifndef NITERATIONS
@@ -61,6 +62,7 @@
 #include <linux/perf_event.h>
 #include <unistd.h>
 #include <asm/unistd.h>
+#include <sys/ioctl.h>
 
 /* define read_format structure */
 struct read_format {
@@ -123,22 +125,23 @@ int main( int argc, char *argv[] )
 
 #ifdef ENABLE_PERF_COUNTERS
   /* perf variables */
-  int nevents = 3;
+  int nevents = PERF_EVENTS_COUNT;
   struct perf_event_attr pe_attr;
   uint64_t fd[nevents];
   uint64_t id[nevents];
   uint64_t val[nevents];
+  char ecode[nevents][32];
   struct read_format *rf;
-  char buffer[(3 + 2 * nevents) * 8]
+  char buffer[(3 + 2 * nevents) * 8];
   rf = (struct read_format*) buffer;
 
   uint64_t etype[nevents];
   uint64_t econf[nevents];
 
   /* define perf events */
-  etype[0] = PERF_TYPE_HARDWARE; econf[0] = PERF_COUNT_HW_CPU_CYCLES;
-  etype[1] = PERF_TYPE_HARDWARE; econf[1] = PERF_COUNT_HW_INSTRUCTIONS;
-  etype[2] = PERF_TYPE_HW_CACHE; econf[2] = PERF_COUNT_HW_CACHE_L1D | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+  strcpy(ecode[0], "CPU Cycles");      etype[0] = PERF_TYPE_HARDWARE; econf[0] = PERF_COUNT_HW_CPU_CYCLES;
+  strcpy(ecode[1], "Instructions");    etype[1] = PERF_TYPE_HARDWARE; econf[1] = PERF_COUNT_HW_INSTRUCTIONS;
+  strcpy(ecode[2], "L1 Cache Misses"); etype[2] = PERF_TYPE_HW_CACHE; econf[2] = PERF_COUNT_HW_CACHE_L1D | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
 #endif
 
   /* read commandline arguments */
@@ -160,14 +163,12 @@ int main( int argc, char *argv[] )
   fp = fopen(fname, "w");
   fprintf(stdout, "membench: writing output to %s\n", fname);
 
-  /* write header */
-  fprintf(fp, "size,stride,time\n");
 
 #ifdef ENABLE_PERF_COUNTERS
   /* open perf events */
   for (i = 0; i < nevents; i++)
   {
-    memset(pe_attr, 0, sizeof(pe_attr));
+    memset(&pe_attr, 0, sizeof(pe_attr));
     pe_attr.type = etype[i];
     pe_attr.size = sizeof(struct perf_event_attr);
     pe_attr.config = econf[i];
@@ -178,13 +179,29 @@ int main( int argc, char *argv[] )
 
     if (i == 0)
     {
-      fd[i] = perf_event_open(pe_attr, 0, -1, -1, 0);
+      fd[i] = perf_event_open(&pe_attr, 0, -1, -1, 0);
     }
     else
     {
-      fd[i] = perf_even_open(pe_attr, 0, -1, fd[0], 0);
+      fd[i] = perf_event_open(&pe_attr, 0, -1, fd[0], 0);
     }
+
+    ioctl(fd[i], PERF_EVENT_IOC_ID, &id[i]);
   }
+
+  /* write header */
+  fprintf(fp, "Size,Stride,Time (ns)");
+
+  for (i = 0; i < nevents; i++)
+  {
+    fprintf(fp, ",%s", ecode[i]);
+  }
+
+  fprintf(fp, "\n");
+#else
+
+  /* write header */
+  fprintf(fp, "Size,Stride,Time (ns)\n");
 #endif
 
   /* membench algorithm -- start */
@@ -195,11 +212,14 @@ int main( int argc, char *argv[] )
     {
 
       ilimit = array_size - stride + 1;
-
-      /* loop 1 - strided access + overhead */
       l1steps = 0;
       l1start = MEMBENCH_CLOCK();
 
+      /* start monitoring */
+      ioctl(fd[0], PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
+      ioctl(fd[0], PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
+
+      /* loop 1 - strided access + overhead */
       do
       {
         for (i = 1; i <= niterations * stride; i++)
@@ -214,6 +234,9 @@ int main( int argc, char *argv[] )
         l1time = MEMBENCH_CLOCK() - l1start;
 
       } while (l1time < SAMPLE_INTERVAL);
+
+      /* stop monitoring */
+      ioctl(fd[0], PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
 
       /* loop 2 - overhead */
       l2steps = 0;
@@ -241,7 +264,28 @@ int main( int argc, char *argv[] )
       stepreads = niterations * stride * ((ilimit - 1.0)/stride + 1.0);
       access_time = steptime/stepreads;
 
+#ifdef ENABLE_PERF_COUNTERS
+      read(fd[0], buffer, sizeof(buffer));
+
+      for (i = 0; i < nevents; i++)
+      {
+        if( rf->values[i].id == id[i] )
+         {
+           val[i] = rf->values[i].value;
+         }
+      }
+
+      fprintf(fp, "%lu,%lu,%f", array_size * sizeof(int), stride * sizeof(int), access_time);
+
+      for (i = 0; i < nevents; i++)
+      {
+        fprintf(fp, ",%lu", val[i]);
+      }
+
+      fprintf(fp, "\n");
+#else
       fprintf(fp, "%lu,%lu,%f\n", array_size * sizeof(int), stride * sizeof(int), access_time);
+#endif
       fflush(fp);
 
     }
