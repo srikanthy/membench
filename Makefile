@@ -50,6 +50,7 @@ OBJ = $(EXE_SRC:.c=.o) $(LIB_SRC:.c=.o)
 # build targets
 all: $(EXE)
 
+membench.o: CFLAGS += -Wno-pedantic
 membench.x: membench.o $(LIB_SRC:.c=.o)
 	$(CC) $(LDFLAGS) -o $@ $^
 
