@@ -29,6 +29,7 @@
 
 /* define macros*/
 #define HIRES_CLOCK
+#define ENABLE_PERF_COUNTERS
 
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
@@ -52,6 +53,37 @@
 #else
 #define MEMBENCH_CLOCK microclock
 #define MULTIPLIER 1000
+#endif
+
+#ifdef ENABLE_PERF_COUNTERS
+/* file headers */
+#include <stdint.h>
+#include <linux/perf_event.h>
+#include <unistd.h>
+#include <asm/unistd.h>
+
+/* define read_format structure */
+struct read_format {
+  uint64_t nr;
+  uint64_t time_enabled;
+  uint64_t time_running;
+  struct {
+    uint64_t value;
+    uint64_t id;
+  } values[];
+};
+
+/* wrapper function for per_event_open */
+int perf_event_open(struct perf_event_attr *attr, pid_t pid, int cpu, int group_fd, unsigned flags)
+{
+
+  int fd;
+
+  fd = syscall(__NR_perf_event_open, attr, pid, cpu, group_fd, flags);
+
+  return fd;
+
+}
 #endif
 
 /* function prototypes */
@@ -89,6 +121,26 @@ int main( int argc, char *argv[] )
   double stepreads;
   double access_time;
 
+#ifdef ENABLE_PERF_COUNTERS
+  /* perf variables */
+  int nevents = 3;
+  struct perf_event_attr pe_attr;
+  uint64_t fd[nevents];
+  uint64_t id[nevents];
+  uint64_t val[nevents];
+  struct read_format *rf;
+  char buffer[(3 + 2 * nevents) * 8]
+  rf = (struct read_format*) buffer;
+
+  uint64_t etype[nevents];
+  uint64_t econf[nevents];
+
+  /* define perf events */
+  etype[0] = PERF_TYPE_HARDWARE; econf[0] = PERF_COUNT_HW_CPU_CYCLES;
+  etype[1] = PERF_TYPE_HARDWARE; econf[1] = PERF_COUNT_HW_INSTRUCTIONS;
+  etype[2] = PERF_TYPE_HW_CACHE; econf[2] = PERF_COUNT_HW_CACHE_L1D | (PERF_COUNT_HW_CACHE_OP_READ << 8) | (PERF_COUNT_HW_CACHE_RESULT_MISS << 16);
+#endif
+
   /* read commandline arguments */
   if (argc == 1)
   {
@@ -110,6 +162,30 @@ int main( int argc, char *argv[] )
 
   /* write header */
   fprintf(fp, "size,stride,time\n");
+
+#ifdef ENABLE_PERF_COUNTERS
+  /* open perf events */
+  for (i = 0; i < nevents; i++)
+  {
+    memset(pe_attr, 0, sizeof(pe_attr));
+    pe_attr.type = etype[i];
+    pe_attr.size = sizeof(struct perf_event_attr);
+    pe_attr.config = econf[i];
+    pe_attr.disabled = 1;
+    pe_attr.exclude_kernel = 1;
+    pe_attr.exclude_hv = 1;
+    pe_attr.read_format = PERF_FORMAT_ID | PERF_FORMAT_GROUP | PERF_FORMAT_TOTAL_TIME_ENABLED | PERF_FORMAT_TOTAL_TIME_RUNNING;
+
+    if (i == 0)
+    {
+      fd[i] = perf_event_open(pe_attr, 0, -1, -1, 0);
+    }
+    else
+    {
+      fd[i] = perf_even_open(pe_attr, 0, -1, fd[0], 0);
+    }
+  }
+#endif
 
   /* membench algorithm -- start */
   /* start loops */
