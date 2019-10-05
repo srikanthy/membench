@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.ticker import FuncFormatter
 
 def bytes_to_string(int_bytes):
 
@@ -30,6 +31,23 @@ def bytes_to_string(int_bytes):
       return "{0} MB".format(int(int_bytes/pow(2,20)))
     if (int_bytes >= int(pow(2,30)) and int_bytes < int(pow(2,40))):
       return "{0} GB".format(int(int_bytes/pow(2,30)))
+
+# define function formatters
+def noformatter(x, pos):
+    'The two args are the value and tick position'
+    return '%1.2f' % (x*1)
+
+def thousands(x, pos):
+    'The two args are the value and tick position'
+    return '%1.2f K' % (x*1e-3)
+
+def millions(x, pos):
+    'The two args are the value and tick position'
+    return '%1.2f M' % (x*1e-6)
+
+def billions(x, pos):
+    'The two args are the value and tick position'
+    return '%1.2f B' % (x*1e-9)
 
 def main(infile = 'membench.csv'):
 
@@ -103,12 +121,25 @@ def main(infile = 'membench.csv'):
       plt.xlim(left = min_stride)
       plt.ylim(bottom = 0)
 
-      # set custom ticks
+      # set custom ticks - x axis
       plt.minorticks_on()
       plt.xticks(xticks_locs, xticks_labels, rotation = 0, fontsize = 6, fontweight = 'demibold')
       plt.yticks(rotation = 0, fontsize = 6, fontweight = 'demibold')
       ax.tick_params(axis = "x", direction = "in")
       ax.tick_params(axis = "y", direction = "in")
+
+      # set custome ticks - y axis
+      y_hgt = ax.axes.get_ylim()[1]
+      formatter = FuncFormatter(noformatter)
+
+      if (y_hgt > 1e3 and y_hgt < 1e6):
+        formatter = FuncFormatter(thousands)
+      if (y_hgt > 1e6 and y_hgt < 1e9):
+        formatter = FuncFormatter(millions)
+      if (y_hgt > 1e9 and y_hgt < 1e12):
+        formatter = FuncFormatter(billions)
+
+      ax.yaxis.set_major_formatter(formatter)
 
       # add labels
       plt.xlabel("Stride", fontsize = 10, fontweight = 'bold')
@@ -154,15 +185,15 @@ def main(infile = 'membench.csv'):
       if ( (l3_cache * 1024) < max_stride ):
         plt.text(l3_cache * 1024, ypos, 'L3 Cache = ' + str(bytes_to_string(l3_cache * 1024)), rotation = 90, fontsize = 5, color = l3_color)
 
-      # add horizontal marker lines for min access val
-      min_val = 99999999.0
+      # add horizontal marker lines for min val
+      min_val = 1e15
       for key, block in data.groupby(column_name):
         min_val = min(min_val, min(block[column_name]))
 
       xlims = ax.axes.get_xlim()
       xpos = xlims[1]
       plt.axhline(min_val, linestyle = "dashed", linewidth = 0.8, color = 'brown')
-      plt.text(xpos * 1.2, min_val - 0.1, 'ns = ' + str(round(min_val,3)), rotation = 0, fontsize = 5, color = 'brown')
+      plt.text(xpos * 1.2, min_val - 0.1, 'min = ' + str(round(min_val,3)), rotation = 0, fontsize = 5, color = 'brown')
 
       # show the plot on screen
 #     plt.show()
