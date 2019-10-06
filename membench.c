@@ -18,8 +18,18 @@
  *                 https://www.cs.cornell.edu/~bindel/class/cs5220-s10/index.html}
  *
  * author: srikanth yalavarthi
- * last modified : 2019-10-02
+ * last modified : 2019-10-06
  * url: https://github.com/srikanthy/membench.git
+ *
+ * list of macros:
+ * HIRES_CLOCK : enables nanosecond precision clock
+ * ENABLE_PERF_COUNTERS : enables perf_events interface
+ * MAX_ARRAY_SIZE : array size to be used for benchmarks
+ * NITERATIONS: number of iterations
+ * PERF_EVENTS_COUNT : number of events to be enabled.
+ *
+ * list of events have to be defined through the variable
+ * ecode, etype and econf in "define events" section
  *
  */
 
@@ -30,7 +40,6 @@
 /* define macros*/
 #define HIRES_CLOCK
 #define ENABLE_PERF_COUNTERS
-#define PERF_EVENTS_COUNT 3
 
 #ifndef MIN_ARRAY_SIZE
 #define MIN_ARRAY_SIZE 4          // size in kB
@@ -57,6 +66,10 @@
 #endif
 
 #ifdef ENABLE_PERF_COUNTERS
+#ifndef PERF_EVENTS_COUNT
+#define PERF_EVENTS_COUNT 3
+#endif
+
 /* file headers */
 #include <stdint.h>
 #include <linux/perf_event.h>

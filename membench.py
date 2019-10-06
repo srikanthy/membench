@@ -4,7 +4,7 @@
 Generate line plots for the result of membench microbenchmark.
 
 Author: Srikanth Yalavarthi
-Last Modified : 2019-10-02
+Last Modified : 2019-10-05
 URL: https://github.com/srikanthy/membench.git
 
 """

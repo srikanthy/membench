@@ -2,6 +2,8 @@
 
  A simple memory benchmark to understand the implications of cache memory on strided access
 
+ Added support for perf\_events interface
+
 #### Source Files
 membench.c  : source code
 
